@@ -16,6 +16,7 @@ DATA_YAML = DATASET_YOLO / "data.yaml"
 
 # --- классы ---
 CLASSES = ["display"]  
+CLASSES = ["glucometer"]
 VAL_SPLIT = 0.15       
 SEED = 42
 
