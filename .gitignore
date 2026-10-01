@@ -1,0 +1,67 @@
+# ===== Виртуальные окружения =====
+.venv/
+venv/
+env/
+ENV/
+.venv*/
+*venv/
+pyvenv.cfg
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ===== Кеши =====
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ===== YOLO / ML артефакты =====
+runs/
+weights/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+
+# ===== Датасет (если не хотите коммитить сами картинки) =====
+dataset/
+glukometr/images/
+glukometr/annotations/
+*.jpg
+*.jpeg
+*.png
+*.xml
+
+# ===== CSV/отчёты =====
+*.csv
+report*.json
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== ОС =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Логи =====
+*.log
+logs/
+
+# ===== Секреты =====
+.env
+.env.*
+secrets.json
