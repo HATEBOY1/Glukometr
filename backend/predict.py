@@ -1,11 +1,15 @@
+import os
+os.environ["TORCH_DISABLE_SHM"] = "1"
 import argparse
 import csv
 import re
 from pathlib import Path
-
+import sys
+from pathlib import Path
 import cv2
 from paddleocr import PaddleOCR
 from ultralytics import YOLO
+from pathlib import Path as _P
 
 import config as cfg
 from preprocess import crop_with_padding, preprocess_for_ocr
@@ -13,6 +17,32 @@ from preprocess import crop_with_padding, preprocess_for_ocr
 
 _detector = None
 _ocr = None
+
+
+
+if sys.platform == "win32":
+    torch_lib = Path(sys.prefix) / "Lib" / "site-packages" / "torch" / "lib"
+    if torch_lib.exists():
+        os.add_dll_directory(str(torch_lib))
+    # то же для torchvision, если есть
+    tv_lib = Path(sys.prefix) / "Lib" / "site-packages" / "torchvision"
+    if tv_lib.exists():
+        try:
+            os.add_dll_directory(str(tv_lib))
+        except Exception:
+            pass
+
+
+
+
+if sys.platform == "win32":
+    site_packages = Path(sys.prefix) / "Lib" / "site-packages"
+    for lib_dir in (site_packages / "torch" / "lib", site_packages / "torchvision"):
+        if lib_dir.exists():
+            try:
+                os.add_dll_directory(str(lib_dir))
+            except Exception:
+                pass
 
 
 def get_detector():
@@ -34,7 +64,6 @@ def get_ocr():
     return _ocr
 
 
-# ---------- постобработка ----------
 def clean_ocr_text(text: str) -> str:
     """Исправляем типичные ошибки OCR на цифровых дисплеях."""
     repl = {
@@ -52,7 +81,6 @@ def clean_ocr_text(text: str) -> str:
 
 
 def extract_number(text: str):
-    """Возвращает float или None."""
     text = clean_ocr_text(text)
     # ищем первое число (целое или с точкой)
     m = re.search(r"\d+(?:\.\d+)?", text)
@@ -65,7 +93,6 @@ def extract_number(text: str):
 
 
 def run_ocr(crop_bgr):
-    """Возвращает (raw_text, list_of_(text, score))."""
     proc = preprocess_for_ocr(crop_bgr)
     result = get_ocr().ocr(proc, cls=True)
     texts = []
@@ -77,18 +104,7 @@ def run_ocr(crop_bgr):
     return raw, texts
 
 
-# ---------- основной пайплайн ----------
 def read_value(image_path: str, conf: float = cfg.DET_CONF):
-    """
-    Возвращает dict:
-        {
-          "value": float | None,
-          "raw_ocr": str,
-          "bbox": (x1,y1,x2,y2) | None,
-          "det_conf": float | None,
-          "ocr_items": [(text, score), ...],
-        }
-    """
     img = cv2.imread(str(image_path))
     if img is None:
         return {"value": None, "raw_ocr": "", "bbox": None,
@@ -100,7 +116,6 @@ def read_value(image_path: str, conf: float = cfg.DET_CONF):
         return {"value": None, "raw_ocr": "", "bbox": None,
                 "det_conf": None, "ocr_items": []}
 
-    # самый уверенный бокс
     best = max(results.boxes, key=lambda b: float(b.conf))
     x1, y1, x2, y2 = map(int, best.xyxy[0].tolist())
     det_conf = float(best.conf)
@@ -122,7 +137,6 @@ def read_value(image_path: str, conf: float = cfg.DET_CONF):
     }
 
 
-# ---------- CLI ----------
 def process_folder(folder: Path, save_csv: Path | None):
     exts = {".jpg", ".jpeg", ".png", ".JPG", ".PNG"}
     files = [p for p in sorted(folder.iterdir()) if p.suffix in exts]
